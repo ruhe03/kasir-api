@@ -55,6 +55,7 @@ func main() {
 	http.HandleFunc("/api/produk/", productHandler.HandleProductsByID)
 
 	http.HandleFunc("/category", categoryHandler.HandleCategories)
+	http.HandleFunc("/category/", categoryHandler.HandleCategoryByID)
 	
 	// localhost:8080/health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
