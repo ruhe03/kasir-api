@@ -14,14 +14,21 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (repo *ProductRepository) GetAll() ([]models.Product, error) {
+func (repo *ProductRepository) GetAll(name string) ([]models.Product, error) {
 	query := "SELECT id, name, price, stock FROM products"
-	rows, err := repo.db.Query(query)
+	
+	args := []interface{}{}
+	if name != "" {
+		query += " WHERE name ILIKE $1"
+		args = append(args, "%"+name+"%")
+	}
+
+	rows, err := repo.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
 	products := make([]models.Product, 0)
 	for rows.Next() {
 		var p models.Product

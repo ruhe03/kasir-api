@@ -4,21 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"kasir-api/database"
+
 	// "kasir-api/models"
+	"kasir-api/handlers"
 	"kasir-api/repositories"
 	"kasir-api/services"
-	"kasir-api/handlers"
+	"log"
 	"net/http"
 	"os"
 	"strings"
-	"log"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Port    string `mapstructure:"PORT"`
-	DBConn  string `mapstructure:"DB_CONN"`
+	Port   string `mapstructure:"PORT"`
+	DBConn string `mapstructure:"DB_CONN"`
 }
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 	}
 
 	config := Config{
-		Port: viper.GetString("PORT"),
+		Port:   viper.GetString("PORT"),
 		DBConn: viper.GetString("DB_CONN"),
 	}
 
@@ -50,13 +51,17 @@ func main() {
 	categoryService := services.NewCategoryService(categoryRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+
 	// setup routes
 	http.HandleFunc("/api/produk", productHandler.HandleProducts)
 	http.HandleFunc("/api/produk/", productHandler.HandleProductsByID)
 
 	http.HandleFunc("/category", categoryHandler.HandleCategories)
 	http.HandleFunc("/category/", categoryHandler.HandleCategoryByID)
-	
+
 	// localhost:8080/health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -66,8 +71,12 @@ func main() {
 		})
 	})
 
+	// Transaction
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)           // POST
+	http.HandleFunc("/api/report/hari-ini", transactionHandler.HandleDailyReport) // GET
+
 	fmt.Println("Server running di localhost:" + config.Port)
-	
+
 	if err := http.ListenAndServe(":"+config.Port, nil); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}

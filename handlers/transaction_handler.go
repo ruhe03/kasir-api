@@ -1,0 +1,60 @@
+package handlers
+
+import (
+	"encoding/json"
+	"kasir-api/models"
+	"kasir-api/services"
+	"net/http"
+)
+
+type TransactionHandler struct {
+	service *services.TransactionService
+}
+
+func NewTransactionHandler(service *services.TransactionService) *TransactionHandler {
+	return &TransactionHandler{service: service}
+}
+
+// multiple item apa aja, quantity nya
+func (h *TransactionHandler) HandleCheckout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	h.Checkout(w, r)
+}
+
+func (h *TransactionHandler) HandleDailyReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	report, err := h.service.GetDailyReport()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(report)
+}
+
+func (h *TransactionHandler) Checkout(w http.ResponseWriter, r *http.Request) {
+	var req models.CheckoutRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	transaction, err := h.service.Checkout(req.Items, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(transaction)
+}
